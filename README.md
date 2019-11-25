@@ -17,6 +17,7 @@ data
       |- mt
 	      |- mt1.nii.gz
         |- mt0.nii.gz
+```
 
 ## How to run
 
