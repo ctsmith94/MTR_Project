@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This is a wrapper to processing scripts, that loops across subjects.
+# This is a wrapper for processing scripts, that loops across subjects.
 #
 # Usage:
 #   ./run_process.sh <script>
