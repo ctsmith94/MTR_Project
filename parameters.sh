@@ -4,7 +4,7 @@
 # Set every other path relative to this path for convenience
 # Do not add "/" at the end. Path should be absolute (i.e. do not use "~")
 # Example:
-export PATH_PARENT="/Users/epsg4/MTR/MTRData"
+export PATH_PARENT="/Users/<USER>/MTR/MTRData"
 
 # Path to the folder containing the BIDS dataset.
 # Do not add "/" at the end. Path should be absolute (i.e. do not use "~")
