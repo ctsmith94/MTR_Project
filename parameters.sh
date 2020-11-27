@@ -9,7 +9,7 @@ export PATH_PARENT="/Users/<USER>/MTR/MTRData"
 # Path to the folder containing the BIDS dataset.
 # Do not add "/" at the end. Path should be absolute (i.e. do not use "~")
 export PATH_DATA="${PATH_PARENT}/Subjects/"
-export SUBJECT="${PATH_PARENT}/Subjects/*"
+#export SUBJECT="${PATH_PARENT}/Subjects/*"
 
 # If each subject folder starts with a prefix, indicate it here. Otherwise, set to ""
 SUBJECT_PREFIX="sub-"
