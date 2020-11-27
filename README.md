@@ -8,16 +8,25 @@ Pipeline for computing average spinal cord MTR by axial slice. Outputs a nifti f
 ## File structure
 
 ```
-data
-  |- 001
-  |- 002
-  |- 003
-      |- t2
-        |- t2.nii.gz
-      |- mt
-	      |- mt1.nii.gz
-        |- mt0.nii.gz
+MTR
+|-MTRData
+  |-Subjects
+  	|-Sub-01 
+  	|-Sub-02
+	|-Sub-03
+      		|- anat
+      			|-Sub-03_T2w.nii.gz
+      			|-Sub-03_T2w.json
+      			|-Sub-03_acq-MToff.nii.gz
+			|-Sub-03_acq-MToff.json
+			|-Sub-03_acq-MTon.nii.gz
+			|-Sub-03_acq-MTon.json
+|-Batch_MTR_Code
+	|-parameters.sh
+	|-MTR_batch_master.sh
+	|-Batch_loop.sh
 ```
+
 
 ## How to run
 
