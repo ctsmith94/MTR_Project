@@ -55,7 +55,7 @@ label_if_does_not_exist(){
 }
 
 # Check if manual segmentation already exists. If it does, copy it locally. If
-# it does not, perform seg.
+# it does not, perform seg, then open FSLeyes for QC.
 segment_if_does_not_exist(){
   local file="$1"
   local contrast="$2"
@@ -73,12 +73,16 @@ segment_if_does_not_exist(){
   if [[ -e $FILESEGMANUAL ]]; then
     echo "Found! Using manual segmentation."
     rsync -avzh $FILESEGMANUAL ${FILESEG}.nii.gz
-    sct_qc -i ${file}.nii.gz -s ${FILESEG}.nii.gz -p sct_deepseg_sc -qc ${PATH_QC} -qc-subject ${SUBJECT}
   else
     echo "Not found. Proceeding with automatic segmentation."
     # Segment spinal cord
     sct_deepseg_sc -i ${file}.nii.gz -c $contrast -qc ${PATH_QC} -qc-subject ${SUBJECT}
+    # Open FSLeyes
+    fsleyes ${file}.nii.gz -cm greyscale ${FILESEG}.nii.gz -cm red -a 70.0 &
+    # Copy to derivatives
+    cp ${FILESEG}.nii.gz ${FILESEGMANUAL}
   fi
+  sct_qc -i ${file}.nii.gz -s ${FILESEG}.nii.gz -p sct_deepseg_sc -qc ${PATH_QC} -qc-subject ${SUBJECT}
 }
 
 
@@ -116,20 +120,13 @@ if [[ -e "${file_mton}.nii.gz" && -e "${file_mtoff}.nii.gz" ]]; then
   sct_register_multimodal -i ${file_mtoff}.nii.gz -d ${file_mton}.nii.gz -dseg ${file_mton_seg}.nii.gz -param step=1,type=im,algo=rigid,slicewise=1,metric=CC -x spline -qc ${PATH_QC} -qc-subject ${SUBJECT}
   file_mtoff="${file_mtoff}_reg"
   # Register template->MTon
-  # sct_register_multimodal -i $SCT_DIR/data/PAM50/template/PAM50_t1.nii.gz -iseg $SCT_DIR/data/PAM50/template/PAM50_cord.nii.gz -d ${file_t1w}.nii.gz -dseg ${file_t1w_seg}.nii.gz -param step=1,type=seg,algo=slicereg,metric=MeanSquares,smooth=2:step=2,type=im,algo=syn,metric=CC,iter=5,gradStep=0.5 -initwarp warp_template2T1w.nii.gz -initwarpinv warp_T1w2template.nii.gz
-  # # Rename warping field for clarity
-  # mv warp_PAM50_t12${file_t1w}.nii.gz warp_template2axT1w.nii.gz
-  # mv warp_${file_t1w}2PAM50_t1.nii.gz warp_axT1w2template.nii.gz
-  # # Warp template
-  # sct_warp_template -d ${file_t1w}.nii.gz -w warp_template2axT1w.nii.gz -ofolder label_axT1w -qc ${PATH_QC} -qc-subject ${SUBJECT}
-  # # Compute MTR
-  # sct_compute_mtr -mt0 ${file_mtoff}.nii.gz -mt1 ${file_mton}.nii.gz
-  # # Compute MTsat
-  # sct_compute_mtsat -mt ${file_mton}.nii.gz -pd ${file_mtoff}.nii.gz -t1 ${file_t1w}.nii.gz
-  # # Extract MTR, MTsat and T1 in WM between C2 and C5 vertebral levels
-  # sct_extract_metric -i mtr.nii.gz -f label_axT1w/atlas -l 51 -vert 2:5 -vertfile label_axT1w/template/PAM50_levels.nii.gz -o ${PATH_RESULTS}/MTR.csv -append 1
-  # sct_extract_metric -i mtsat.nii.gz -f label_axT1w/atlas -l 51 -vert 2:5 -vertfile label_axT1w/template/PAM50_levels.nii.gz -o ${PATH_RESULTS}/MTsat.csv -append 1
-  # sct_extract_metric -i t1map.nii.gz -f label_axT1w/atlas -l 51 -vert 2:5 -vertfile label_axT1w/template/PAM50_levels.nii.gz -o ${PATH_RESULTS}/T1.csv -append 1
+  sct_register_to_template -i ${file_mton}.nii.gz -s ${file_mton_seg}.nii.gz -ldisc ${FILELABELMANUAL} -ref subject -param step=1,type=seg,algo=slicereg,metric=MeanSquares,smooth=2:step=2,type=im,algo=syn,metric=CC,iter=5,gradStep=0.5 -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  # Warp template
+  sct_warp_template -d ${file_mton}.nii.gz -w warp_template2anat.nii.gz -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  # Compute MTR
+  sct_compute_mtr -mt0 ${file_mtoff}.nii.gz -mt1 ${file_mton}.nii.gz
+  # Extract MTR, MTsat and T1 in WM between C2 and C5 vertebral levels
+  sct_extract_metric -i mtr.nii.gz -l 51 -vert 2:7 -perlevel 1 -o ${PATH_RESULTS}/MTR.csv -append 1
 else
   echo "WARNING: MTS dataset is incomplete."
 fi

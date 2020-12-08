@@ -9,7 +9,10 @@ The pipeline is semi-automatic and requires to:
 
 ## Dependencies
 
-[SCT v5.0.1](https://github.com/neuropoly/spinalcordtoolbox/releases/tag/5.0.1) or above.
+- [SCT v5.0.1](https://github.com/neuropoly/spinalcordtoolbox/releases/tag/5.0.1) or above.
+- [FSLeyes](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FSLeyes) for QC and manual
+correction of segmentation. Note: Another editor could be used if more convenient
+(e.g. ITKsnap).
 
 
 ## File structure
