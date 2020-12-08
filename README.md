@@ -1,53 +1,75 @@
 # MTR_Project
-Pipeline for computing average spinal cord MTR by axial slice. Outputs a nifti file of MTR as well as a .csv file with average whole cord MTR by slice. 
+Pipeline for computing average spinal cord MTR by axial slice. Outputs a NIfTI
+file of MTR as well as a CSV file with average MTR per vertebral level.
+
+The pipeline is semi-automatic and requires to:
+- manually label C2-C3 disc
+- check the cord segmentation (and adjust it if necessary)
+
 
 ## Dependencies
 
-[SCT v3.1.2](https://github.com/neuropoly/spinalcordtoolbox/releases/tag/v3.1.2) or above.
+- [SCT v5.0.1](https://github.com/neuropoly/spinalcordtoolbox/releases/tag/5.0.1) or above.
+- [FSLeyes](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FSLeyes) for QC and manual
+correction of segmentation. Note: Another editor could be used if more convenient
+(e.g. ITKsnap).
+
 
 ## File structure
 
+The dataset needs to be organized according to the following BIDS structure:
 ```
-MTR
-|-MTRData
-  |-Subjects
-  	|-Sub-01 
-  	|-Sub-02
-	|-Sub-03
-      		|- anat
-      			|-Sub-03_T2w.nii.gz
-      			|-Sub-03_T2w.json
-      			|-Sub-03_acq-MToff.nii.gz
-			|-Sub-03_acq-MToff.json
-			|-Sub-03_acq-MTon.nii.gz
-			|-Sub-03_acq-MTon.json
-|-Batch_MTR_Code
-	|-parameters.sh
-	|-MTR_batch_master.sh
-	|-Batch_loop.sh
+|- PATH_DATA
+   |- Sub-01
+   |- Sub-02
+   |- Sub-03
+   |  |- anat
+   |     |- Sub-03_T2w.nii.gz
+   |     |- Sub-03_T2w.json
+   |     |- Sub-03_acq-MToff.nii.gz
+   |     |- Sub-03_acq-MToff.json
+   |     |- Sub-03_acq-MTon.nii.gz
+   |     |- Sub-03_acq-MTon.json
+   |
+   |- derivatives
+      |- labels
+         |- Sub-01
+            |- anat
+               |- Sub-01_acq-MToff_labels-disc-manual.nii.gz  <------- intervertebral disc labels
 ```
 
 
 ## How to run
 
 - Download (or `git clone`) this repository.
-- Edit [parameters.sh](./parameters.sh) according to your needs, then save the file.
-- **Manual Labeling:** Click at the posterior tip of two inter-vertebral discs. The discs are indicated on the left of the window. For example, label 3 corresponds to disc C2-C3.
-~~~
-./run_process.sh 1_label_data.sh
-~~~
-- **Process data:** Does most of the processing (automatic). Once completed, check results of the automatic segmentations by opening the quality control (QC) report under `${PATH_QC}/index.html`, and correct the segmentation if needed. To correct a segmentation, open it using e.g. fsleyes, edit the binary mask, then save it by adding the suffix `_manual`. E.g. `t2_seg.nii.gz` --> `t2_seg_manual.nii.gz`.
-~~~
-./run_process.sh 2_process_data.sh
-~~~
-- **Compute metrics:** Extract quantitative metrics (automatic).
-~~~
-./run_process.sh 3_compute_metrics.sh
-~~~
+- Run the processing:
+  ```bash
+  sct_run_batch -jobs -1 -path-data <PATH_DATA> -path-output <PATH_RESULTS> -script process_data.sh
+  ```
+
+The program will prompt to click at C2-C3 discs. The label file will be created
+within the <PATH_DATA> folder, under a new directory called `derivatives/`.
+
+The program will also prompt you to verify the segmentation, manually fix it
+if necessary, and then save it (overwrite the existing file). The next time
+you run the pipeline, if the manually-corrected segmentation is already present,
+you will not have to edit it.
+
+After running the pipeline across subjects, look at the QC file:
+```bash
+open <PATH_RESULTS>/qc/index.html
+```
+
+Specifically look at:
+- the segmentation results, by entering "deepseg" in the search window.
+- The co-registration between the MTon and MToff, by entering "register" in
+the search window.
+
 
 ## Contributors
 
 Julien Cohen-Adad; C. Taylor Smith
+
 
 ## License
 
