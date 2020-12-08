@@ -66,6 +66,11 @@ Specifically look at:
 the search window.
 
 
+## Video tutorial
+
+[![video tutorial](https://img.youtube.com/vi/hMbcSn7d2us/0.jpg)](https://youtu.be/hMbcSn7d2us)
+
+
 ## Contributors
 
 Julien Cohen-Adad; C. Taylor Smith
