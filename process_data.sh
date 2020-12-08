@@ -18,7 +18,7 @@
 # PATH_QC="~/qc"
 
 # Uncomment for full verbose
-# set -x
+set -x
 
 # Immediately exit if error
 set -e -o pipefail
@@ -45,13 +45,13 @@ label_if_does_not_exist(){
   echo "Looking for manual label: $FILELABELMANUAL"
   if [[ -e $FILELABELMANUAL ]]; then
     echo "Found! Using manual labels."
-    rsync -avzh $FILELABELMANUAL ${FILELABEL}.nii.gz
   else
     echo "Not found. Proceeding with manual labeling."
     mkdir -p ${PATH_DATA}/derivatives/labels/${SUBJECT}/anat
     # Create labels at the posterior tip of the C2-C3 intervertebral disc
     sct_label_utils -i ${file}.nii.gz -create-viewer 3 -o ${FILELABELMANUAL} -msg "Click at the posterior tip of the C2-C3 intervertebral disc."
   fi
+  # sct_qc -i ${file}.nii.gz -s ${FILELABELMANUAL} -p sct_label_utils -qc ${PATH_QC} -qc-subject ${SUBJECT}
 }
 
 # Check if manual segmentation already exists. If it does, copy it locally. If
@@ -76,9 +76,9 @@ segment_if_does_not_exist(){
   else
     echo "Not found. Proceeding with automatic segmentation."
     # Segment spinal cord
-    sct_deepseg_sc -i ${file}.nii.gz -c $contrast -qc ${PATH_QC} -qc-subject ${SUBJECT}
+    sct_deepseg_sc -i ${file}.nii.gz -c $contrast
     # Open FSLeyes
-    fsleyes ${file}.nii.gz -cm greyscale ${FILESEG}.nii.gz -cm red -a 70.0 &
+    fsleyes ${file}.nii.gz -cm greyscale ${FILESEG}.nii.gz -cm red -a 70.0
     # Copy to derivatives
     cp ${FILESEG}.nii.gz ${FILESEGMANUAL}
   fi
@@ -114,13 +114,15 @@ if [[ -e "${file_mton}.nii.gz" && -e "${file_mtoff}.nii.gz" ]]; then
   sct_create_mask -i ${file_mton}.nii.gz -p centerline,${file_mton_seg}.nii.gz -size 35mm -o ${file_mton}_mask.nii.gz
   # Crop data for faster processing
   sct_crop_image -i ${file_mton}.nii.gz -m ${file_mton}_mask.nii.gz -o ${file_mton}_crop.nii.gz
+  sct_crop_image -i ${file_mton_seg}.nii.gz -m ${file_mton}_mask.nii.gz -o ${file_mton_seg}_crop.nii.gz
   file_mton="${file_mton}_crop"
+  file_mton_seg="${file_mton_seg}_crop"
   # Register MToff->MTon
   # Tips: here we only use rigid transformation because both images have very similar sequence parameters. We don't want to use SyN/BSplineSyN to avoid introducing spurious deformations.
   sct_register_multimodal -i ${file_mtoff}.nii.gz -d ${file_mton}.nii.gz -dseg ${file_mton_seg}.nii.gz -param step=1,type=im,algo=rigid,slicewise=1,metric=CC -x spline -qc ${PATH_QC} -qc-subject ${SUBJECT}
   file_mtoff="${file_mtoff}_reg"
   # Register template->MTon
-  sct_register_to_template -i ${file_mton}.nii.gz -s ${file_mton_seg}.nii.gz -ldisc ${FILELABELMANUAL} -ref subject -param step=1,type=seg,algo=slicereg,metric=MeanSquares,smooth=2:step=2,type=im,algo=syn,metric=CC,iter=5,gradStep=0.5 -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  sct_register_to_template -i ${file_mton}.nii.gz -s ${file_mton_seg}.nii.gz -ldisc ${FILELABELMANUAL} -ref subject -param step=1,type=seg,algo=centermassrot:step=2,type=seg,algo=bsplinesyn,metric=MeanSquares,iter=5,smooth=1,gradStep=0.5,slicewise=1 -qc ${PATH_QC} -qc-subject ${SUBJECT}
   # Warp template
   sct_warp_template -d ${file_mton}.nii.gz -w warp_template2anat.nii.gz -qc ${PATH_QC} -qc-subject ${SUBJECT}
   # Compute MTR
